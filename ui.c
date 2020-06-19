@@ -7,7 +7,6 @@ Library for game UI
 
 ******************/
 #include <stdlib.h>
-#include <time.h>
 #include "display.h"
 
 #define WALL_NUMS 4
@@ -99,7 +98,7 @@ int in_range(int a, int r0, int r1) {
     return 0;
 }
 
-// Check if the ball at (x, y) collides with a wall or the floor.
+// Check if the ball at (x, y) collides with a wall, floor, or ceiling.
 // If it does, return 1, or if it doesn't return 0.
 int check_collision(int i2c_fd, int x, int y) {
   int x0 = x - (BALL_WIDTH / 2);
@@ -109,6 +108,9 @@ int check_collision(int i2c_fd, int x, int y) {
 
   // check floor
   if (y1 >= 55) return 1;
+
+  // check ceiling
+  if (y0 <= 0) return 1;
 
   for (int i = 0; i < WALL_NUMS; i++) {
     if (walls[i][0] < 0 || walls[i][0] + WALL_WIDTH >= S_WIDTH) continue;
