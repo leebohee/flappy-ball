@@ -184,8 +184,8 @@ void draw_line(int i2c_fd, int x0, int y0, int x1, int y1, int offset) {
 // Draw a rectangle, whose left-upper point is at (x, y),
 // with given width and height.
 void draw_rectangle(int i2c_fd, int x, int y, int w, int h) {
-  draw_line(i2c_fd, x, y, x + w - 1, y, 0);              // upper-side
-  draw_line(i2c_fd, x, y + h, x + w - 1, y + h, 0);      // lower-side
-  draw_line(i2c_fd, x, y, x, y + h, 0);                  // left-side
-  draw_line(i2c_fd, x + w - 1, y, x + w - 1, y + h, 0);  // right-side
+  draw_line(i2c_fd, x, y, x + w - 1, y, 0);                  // upper-side
+  draw_line(i2c_fd, x, y + h - 1, x + w - 1, y + h - 1, 7);  // lower-side
+  draw_line(i2c_fd, x, y, x, y + h - 1, 7);                  // left-side
+  draw_line(i2c_fd, x + w - 1, y, x + w - 1, y + h - 1, 7);  // right-side
 }
