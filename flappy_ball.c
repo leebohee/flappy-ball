@@ -98,7 +98,7 @@ int main() {
     else
       ball_y += 1;
 
-    // update walls" position
+    // update walls' position
     for (int i = 0; i < WALL_NUMS; i++) {
       if (walls[i][0] < 0) continue;
       walls[i][0] -= 2;
