@@ -17,3 +17,12 @@ void draw_floor(int i2c_fd);
 void draw_walls(int i2c_fd);
 void generate_wall(int i2c_fd);
 int check_collision(int i2c_fd, int x, int y);
+
+void home_page(int i2c_fd);
+void game_page(int i2c_fd);
+void rank_page(int i2c_fd);
+void reset_page(int i2c_fd);
+void game_over_page(int i2c_fd);
+void game_result_page(int i2c_fd);
+void game_pause_page(int i2c_fd);
+void more_page(int i2c_fd);

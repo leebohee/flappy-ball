@@ -99,7 +99,7 @@ int in_range(int a, int r0, int r1) {
 }
 
 // Check if the ball at (x, y) collides with a wall, floor, or ceiling.
-// If it does, return 1, or if it doesn't return 0.
+// If it does, return 1, or if it doesn"t return 0.
 int check_collision(int i2c_fd, int x, int y) {
   int x0 = x - (BALL_WIDTH / 2);
   int y0 = y - (BALL_WIDTH / 2);
@@ -124,4 +124,121 @@ int check_collision(int i2c_fd, int x, int y) {
     }
   }
   return 0;
+}
+
+void home_page(int i2c_fd) {
+  draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+  write_str(i2c_fd, "FLAPPY BALL", 35, 2);
+
+  write_str(i2c_fd, "START", 5, S_PAGES - 2);
+  write_str(i2c_fd, "MORE", 54, S_PAGES - 2);
+  write_str(i2c_fd, "RANK", 100, S_PAGES - 2);
+}
+
+void game_page(int i2c_fd) {
+  draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+  write_str(i2c_fd, "FLAPPY BALL", 35, 2);
+
+  write_str(i2c_fd, "Press any button", 20, S_PAGES - 3);
+  write_str(i2c_fd, "to start...", 38, S_PAGES - 2);
+}
+
+void rank_page(int i2c_fd) {
+  write_str(i2c_fd, "NO.", 5, 0);
+  write_str(i2c_fd, "NAME", 54, 0);
+  write_str(i2c_fd, "SCORE", 98, 0);
+
+  // print rankers
+
+  write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
+  write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
+  write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
+}
+
+void reset_page(int i2c_fd) {
+  draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+  write_str(i2c_fd, "Do you", 48, 2);
+  write_str(i2c_fd, "want to reset?", 24, 3);
+
+  write_str(i2c_fd, "YES", 5, S_PAGES - 2);
+  write_str(i2c_fd, "NO", 54, S_PAGES - 2);
+}
+
+void game_over_page(int i2c_fd) {
+  draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+  write_str(i2c_fd, "GAME OVER", 37, 2);
+
+  write_str(i2c_fd, "T  T", 52, 4);
+  write_str(i2c_fd, " __ ", 52, 5);
+}
+
+void game_result_page(int i2c_fd) {
+  draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+
+  write_str(i2c_fd, "SCORE: ", 20, 2);
+  write_str(i2c_fd, "RANK: ", 20, 4);
+
+  write_str(i2c_fd, "RESTART", 5, S_PAGES - 2);
+  write_str(i2c_fd, "HOME", 54, S_PAGES - 2);
+}
+
+void game_pause_page(int i2c_fd) {
+  draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+
+  write_str(i2c_fd, "SCORE: ", 20, 2);
+
+  write_str(i2c_fd, "RESUME", 5, S_PAGES - 2);
+  write_str(i2c_fd, "RESTART", 50, S_PAGES - 2);
+  write_str(i2c_fd, "HOME", 100, S_PAGES - 2);
+}
+
+void more_page(int i2c_fd) {
+  static char info[37][22] = {"This game is that you",
+                              " make the ball to be ",
+                              "survived as long as p",
+                              "ossible without colli",
+                              "ding with obstacles. ",
+                              "When the leftmost but",
+                              "ton is pressed, the b",
+                              "all bounces up then f",
+                              "alls down. The obstac",
+                              "le has a hole, and yo",
+                              "u should control the ",
+                              "movement of the ball ",
+                              "properly so that the ",
+                              "ball can pass through",
+                              " the hole. The game e",
+                              "nds:\n  1) When the ba",
+                              "ll falls down and hit",
+                              "s the floor\n  2) When",
+                              " the ball collides an",
+                              "d obstacle(=wall)\n  3",
+                              ") When the ball bounc",
+                              "es up and hits the ce",
+                              "iling\n\n\nIn addition t",
+                              "o balls and obstacles",
+                              ", items appear random",
+                              "ly on the map. You ca",
+                              "n eat the item by mov",
+                              "ing the ball and use ",
+                              "it with the rightmost",
+                              " button. If you use a",
+                              "n item, the ball beco",
+                              "mes invincible for a ",
+                              "short time (for 2-3 s",
+                              "econds) so that it wi",
+                              "ll not die even if it",
+                              " collides with obstab",
+                              "les."};
+
+  write_str(i2c_fd, "FLAPPY BALL", 35, 0);
+
+  // print explanation
+  for (int i = 0; i < 5; i++) {
+    write_str(i2c_fd, info[i], 0, i + 2);
+  }
+
+  write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
+  write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
+  write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
 }

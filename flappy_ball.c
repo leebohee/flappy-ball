@@ -43,6 +43,38 @@ int main() {
   }
   srand((unsigned int)time(NULL));
 
+  home_page(i2c_fd);
+  usleep(1000 * 1000);
+  update_full(i2c_fd, clear);
+
+  game_page(i2c_fd);
+  usleep(1000 * 1000);
+  update_full(i2c_fd, clear);
+
+  rank_page(i2c_fd);
+  usleep(1000 * 1000);
+  update_full(i2c_fd, clear);
+
+  reset_page(i2c_fd);
+  usleep(1000 * 1000);
+  update_full(i2c_fd, clear);
+
+  game_over_page(i2c_fd);
+  usleep(1000 * 1000);
+  update_full(i2c_fd, clear);
+
+  game_result_page(i2c_fd);
+  usleep(1000 * 1000);
+  update_full(i2c_fd, clear);
+
+  game_pause_page(i2c_fd);
+  usleep(1000 * 1000);
+  update_full(i2c_fd, clear);
+
+  more_page(i2c_fd);
+  while (1)
+    ;
+
   while (1) {
     // clear display
     update_full(i2c_fd, clear);
@@ -66,7 +98,7 @@ int main() {
     else
       ball_y += 1;
 
-    // update walls' position
+    // update walls" position
     for (int i = 0; i < WALL_NUMS; i++) {
       if (walls[i][0] < 0) continue;
       walls[i][0] -= 2;
