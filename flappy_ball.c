@@ -25,7 +25,6 @@ Flappy Ball: A video console game
 int main() {
   int counter = 0;
   int ball_x = 64, ball_y = 35;
-  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
 
   int i2c_fd = open("/dev/i2c-1", O_RDWR);
   if (i2c_fd < 0) {
@@ -44,72 +43,7 @@ int main() {
   srand((unsigned int)time(NULL));
 
   home_page(i2c_fd);
-  usleep(1000 * 1000);
-  update_full(i2c_fd, clear);
 
-  game_page(i2c_fd);
-  usleep(1000 * 1000);
-  update_full(i2c_fd, clear);
-
-  rank_page(i2c_fd);
-  usleep(1000 * 1000);
-  update_full(i2c_fd, clear);
-
-  reset_page(i2c_fd);
-  usleep(1000 * 1000);
-  update_full(i2c_fd, clear);
-
-  game_over_page(i2c_fd);
-  usleep(1000 * 1000);
-  update_full(i2c_fd, clear);
-
-  game_result_page(i2c_fd);
-  usleep(1000 * 1000);
-  update_full(i2c_fd, clear);
-
-  game_pause_page(i2c_fd);
-  usleep(1000 * 1000);
-  update_full(i2c_fd, clear);
-
-  more_page(i2c_fd);
-  while (1)
-    ;
-
-  while (1) {
-    // clear display
-    update_full(i2c_fd, clear);
-
-    // check collision
-    if (check_collision(i2c_fd, ball_x, ball_y)) {
-      printf("GAME OVER!\n");
-      break;
-    }
-
-    // generate a new wall periodically
-    counter++;
-    if (counter >= GEN_PERIOD) {
-      generate_wall(i2c_fd);
-      counter = 0;
-    }
-
-    // update ball status depending on switch input
-    if (counter % 2)
-      ball_y -= 1;
-    else
-      ball_y += 1;
-
-    // update walls' position
-    for (int i = 0; i < WALL_NUMS; i++) {
-      if (walls[i][0] < 0) continue;
-      walls[i][0] -= 2;
-    }
-
-    // draw map
-    write_str(i2c_fd, "SCORE : ", 0, S_PAGES - 1);
-    draw_floor(i2c_fd);
-    draw_ball(i2c_fd, ball_x, ball_y);
-    draw_walls(i2c_fd);
-  }
   close(i2c_fd);
   return 0;
 }

@@ -8,6 +8,10 @@ Library for game UI
 ******************/
 #include <stdlib.h>
 #include "display.h"
+#include "ui.h"
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #define WALL_NUMS 4
 #define WALL_WIDTH 12
@@ -17,7 +21,84 @@ Library for game UI
 
 #define PAGE(Y_LOC) Y_LOC / 8
 
+#define PERIPHERAL_BASE 0x3F000000UL
+#define GPIO_BASE (PERIPHERAL_BASE + 0x200000)
+
+#define GEN_PERIOD 20
+
 int walls[WALL_NUMS][2];  // (x, h) of top wall
+
+int gpio_4_value;
+int gpio_17_value;
+int gpio_27_value;
+
+void* gpio_ctr;
+
+void set_gpio_output_value(void *gpio_ctr, int gpio_nr, int value) {
+	int reg_id = gpio_nr / 32;
+	int pos = gpio_nr % 32;
+	
+	if(value) {
+		#define GPIO_SET_OFFSET 0x1c
+		uint32_t* output_set = (uint32_t*) (gpio_ctr + GPIO_SET_OFFSET + 0x4 * reg_id);
+		*output_set = 0x1 << pos;
+	}
+	else {
+		#define GPIO_CLR_OFFSET 0x28
+		uint32_t* output_clr = (uint32_t*) (gpio_ctr + GPIO_CLR_OFFSET + 0x4 * reg_id);
+		*output_clr = 0x1 << pos;
+	}
+}
+
+void set_gpio_output(void *gpio_ctr, int gpio_nr) {
+	int reg_id = gpio_nr / 10;
+	int pos = gpio_nr % 10;
+	uint32_t* fsel_reg = (uint32_t*) (gpio_ctr + 0x4 * reg_id);
+	uint32_t fsel_val = *fsel_reg;
+	uint32_t mask = 0x7 << (pos * 3);
+	fsel_val = fsel_val & ~mask;
+	uint32_t gpio_output_select = 0x1 << (pos * 3);
+	fsel_val = fsel_val | gpio_output_select;
+	*fsel_reg = fsel_val;
+}
+
+void set_gpio_input(void *gpio_ctr, int gpio_nr) {
+	int reg_id = gpio_nr / 10;
+	int pos = gpio_nr % 10;
+	uint32_t* fsel_reg = (uint32_t*) (gpio_ctr + 0x4 * reg_id);
+	uint32_t fsel_val = *fsel_reg;
+	uint32_t mask = 0x7 << (pos * 3);
+	fsel_val = fsel_val & ~mask;
+	*fsel_reg = fsel_val;
+}
+
+void get_gpio_input_value(void *gpio_ctr, int gpio_nr, int *value) {
+	int reg_id = gpio_nr / 32;
+	int pos = gpio_nr % 32;
+
+	#define GPIO_LEV_OFFSET 0x34
+	uint32_t* level_reg = (uint32_t*) (gpio_ctr + GPIO_LEV_OFFSET + 0x4 * reg_id);
+	uint32_t level = *level_reg & (0x1 << pos);
+	*value = level? 1:0;
+}
+
+void set_gpio_pullup(void *gpio_ctr, int gpio_nr) {
+	int reg_id = gpio_nr / 32;
+	int pos = gpio_nr % 32;
+
+	#define GPIO_PUD_OFFSET 0x94
+	#define GPIO_PUDCLK_OFFSET 0x98
+	uint32_t* pud_reg = (uint32_t*) (gpio_ctr + GPIO_PUD_OFFSET);
+	uint32_t* pudclk_reg = (uint32_t*) (gpio_ctr + GPIO_PUDCLK_OFFSET + 0x4 * reg_id);
+
+	#define GPIO_PUD_PULLUP 0x2
+	*pud_reg = GPIO_PUD_PULLUP;
+	usleep(1);
+	*pudclk_reg = (0x1 << pos);
+	usleep(1);
+	*pud_reg = 0;
+	*pudclk_reg = 0;
+}
 
 // Draw a ball whose center is (x, y), note that y is row, not page.
 void draw_ball(int i2c_fd, int x, int y) {
@@ -125,25 +206,124 @@ int check_collision(int i2c_fd, int x, int y) {
   }
   return 0;
 }
+void init_gpios(){
+  int fdmem = open("/dev/mem",O_RDWR);
+  if (fdmem<0) { printf("Error opening /dev/mem"); return; }
+  gpio_ctr = mmap(0, 4096, PROT_READ+PROT_WRITE, MAP_SHARED, fdmem, GPIO_BASE);
+  if(gpio_ctr==MAP_FAILED) { printf("mmap error "); return; }
+  set_gpio_input(gpio_ctr,4);
+  set_gpio_input(gpio_ctr,17);
+  set_gpio_input(gpio_ctr,27);
 
+  set_gpio_pullup(gpio_ctr,4);
+  set_gpio_pullup(gpio_ctr,17);
+  set_gpio_pullup(gpio_ctr,27);
+
+}
 void home_page(int i2c_fd) {
+  //int fdmem = open("/dev/mem",O_RDWR);
+
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+
+  init_gpios();
+
+  update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
   write_str(i2c_fd, "FLAPPY BALL", 35, 2);
 
   write_str(i2c_fd, "START", 5, S_PAGES - 2);
   write_str(i2c_fd, "MORE", 54, S_PAGES - 2);
   write_str(i2c_fd, "RANK", 100, S_PAGES - 2);
+
+  while(1){
+    get_gpio_input_value(gpio_ctr,4,&gpio_4_value);
+    get_gpio_input_value(gpio_ctr,17,&gpio_17_value);
+    get_gpio_input_value(gpio_ctr,27,&gpio_27_value);
+    
+    if(gpio_4_value == 0){
+      
+      printf("4\n");
+      game_page(i2c_fd);
+    }
+    else if(gpio_17_value == 0){
+      printf("17\n");
+      more_page(i2c_fd);
+    }
+    else if(gpio_27_value == 0){
+      printf("27\n");
+    }
+
+  }
 }
 
-void game_page(int i2c_fd) {
-  draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
-  write_str(i2c_fd, "FLAPPY BALL", 35, 2);
+void game_page(int i2c_fd){
+  int counter = 0;
+  int ball_x = 64, ball_y = 35;
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
+  while (1) {
+    // clear display
+    get_gpio_input_value(gpio_ctr,4,&gpio_4_value);
+    get_gpio_input_value(gpio_ctr,17,&gpio_17_value);
+    get_gpio_input_value(gpio_ctr,27,&gpio_27_value);
+    update_full(i2c_fd, clear);
+    if(gpio_4_value == 0){
+      printf("4\n");
+      ball_y-=3;
+      usleep(1000*100);
+    }
+    else if(gpio_17_value == 0){
+      printf("17\n");
+      ball_y+=3;
+    }
+    else if(gpio_27_value == 0){
+      printf("27\n");
+      while(1){
+        usleep(1000*300);
+        if(gpio_27_value == 0){
+          break;
+        }
+      }
+    }
 
-  write_str(i2c_fd, "Press any button", 20, S_PAGES - 3);
-  write_str(i2c_fd, "to start...", 38, S_PAGES - 2);
+    // check collision
+    if (check_collision(i2c_fd, ball_x, ball_y)) {
+      game_over_page(i2c_fd);
+      usleep( 1000 * 2000 );
+      rank_page(i2c_fd);
+      //break;
+    }
+
+    // generate a new wall periodically
+    counter++;
+    if (counter >= GEN_PERIOD) {
+      generate_wall(i2c_fd);
+      counter = 0;
+    }
+
+    // update ball status depending on switch input
+    if (counter % 2)
+      ball_y -= 1;
+    else
+      ball_y += 1;
+
+    // update walls' position
+    for (int i = 0; i < WALL_NUMS; i++) {
+      if (walls[i][0] < 0) continue;
+      walls[i][0] -= 2;
+    }
+
+    // draw map
+    write_str(i2c_fd, "SCORE : ", 0, S_PAGES - 1);
+    draw_floor(i2c_fd);
+    draw_ball(i2c_fd, ball_x, ball_y);
+    draw_walls(i2c_fd);
+  }
 }
 
 void rank_page(int i2c_fd) {
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
   write_str(i2c_fd, "NO.", 5, 0);
   write_str(i2c_fd, "NAME", 54, 0);
   write_str(i2c_fd, "SCORE", 98, 0);
@@ -153,9 +333,12 @@ void rank_page(int i2c_fd) {
   write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
   write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
   write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
+  while(1);
 }
 
 void reset_page(int i2c_fd) {
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
   write_str(i2c_fd, "Do you", 48, 2);
   write_str(i2c_fd, "want to reset?", 24, 3);
@@ -165,6 +348,8 @@ void reset_page(int i2c_fd) {
 }
 
 void game_over_page(int i2c_fd) {
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
   write_str(i2c_fd, "GAME OVER", 37, 2);
 
@@ -173,6 +358,8 @@ void game_over_page(int i2c_fd) {
 }
 
 void game_result_page(int i2c_fd) {
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
 
   write_str(i2c_fd, "SCORE: ", 20, 2);
@@ -183,6 +370,8 @@ void game_result_page(int i2c_fd) {
 }
 
 void game_pause_page(int i2c_fd) {
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
 
   write_str(i2c_fd, "SCORE: ", 20, 2);
@@ -193,6 +382,8 @@ void game_pause_page(int i2c_fd) {
 }
 
 void more_page(int i2c_fd) {
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
   static char info[37][22] = {"This game is that you",
                               " make the ball to be ",
                               "survived as long as p",
@@ -241,4 +432,5 @@ void more_page(int i2c_fd) {
   write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
   write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
   write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
+  while(1);
 }
