@@ -35,6 +35,8 @@ int gpio_17_value;
 int gpio_27_value;
 
 void* gpio_ctr;
+int score;
+
 
 void set_gpio_output_value(void* gpio_ctr, int gpio_nr, int value) {
   int reg_id = gpio_nr / 32;
@@ -233,6 +235,7 @@ void init_gpios() {
 
 void init_game(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  score = 0;
   update_full(i2c_fd, clear);
   for (int i = 0; i < WALL_NUMS; i++) {
     walls[i][0] = -1;
@@ -266,9 +269,24 @@ void home_page(int i2c_fd) {
       printf("4\n");
       init_game(i2c_fd);
       game_page(i2c_fd);
+      update_full(i2c_fd, clear);
+      draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+      write_str(i2c_fd, "FLAPPY BALL", 35, 2);
+
+      write_str(i2c_fd, "START", 5, S_PAGES - 2);
+      write_str(i2c_fd, "MORE", 54, S_PAGES - 2);
+      write_str(i2c_fd, "RANK", 100, S_PAGES - 2);
+
     } else if (gpio_17_value == 0) {
       printf("17\n");
       more_page(i2c_fd);
+      update_full(i2c_fd, clear);
+      draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+      write_str(i2c_fd, "FLAPPY BALL", 35, 2);
+
+      write_str(i2c_fd, "START", 5, S_PAGES - 2);
+      write_str(i2c_fd, "MORE", 54, S_PAGES - 2);
+      write_str(i2c_fd, "RANK", 100, S_PAGES - 2);
     } else if (gpio_27_value == 0) {
       printf("27\n");
     }
@@ -322,6 +340,9 @@ void game_page(int i2c_fd) {
         break;
       }
     }
+    else{
+      score += 5;
+    }
 
     // generate a new wall periodically
     counter++;
@@ -343,7 +364,9 @@ void game_page(int i2c_fd) {
     }
 
     // draw map
-    write_str(i2c_fd, "SCORE : ", 0, S_PAGES - 1);
+    char _score[15];
+    sprintf(_score,"SCORE : %d", score);
+    write_str(i2c_fd, _score, 0, S_PAGES - 1);
     draw_floor(i2c_fd);
     draw_ball(i2c_fd, ball_x, ball_y);
     draw_walls(i2c_fd);
@@ -400,7 +423,10 @@ int game_result_page(int i2c_fd) {
   update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
 
-  write_str(i2c_fd, "SCORE: ", 20, 2);
+  char _score[15];
+  sprintf(_score,"SCORE : %d", score);
+
+  write_str(i2c_fd, _score, 20, 2);
   write_str(i2c_fd, "RANK: ", 20, 4);
 
   write_str(i2c_fd, "RESTART", 5, S_PAGES - 2);
@@ -409,9 +435,9 @@ int game_result_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
     get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
 
-    if (gpio_4_value == 0) {
+    if (gpio_4_value == 0) {//restart
       return 4;
-    } else if (gpio_17_value == 0) {
+    } else if (gpio_17_value == 0) {//home
       return 17;
     }
   }
@@ -421,8 +447,9 @@ int game_pause_page(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
-
-  write_str(i2c_fd, "SCORE: ", 20, 2);
+  char _score[15];
+  sprintf(_score,"SCORE : %d", score);
+  write_str(i2c_fd, _score, 20, 2);
 
   write_str(i2c_fd, "RESUME", 5, S_PAGES - 2);
   write_str(i2c_fd, "RESTART", 50, S_PAGES - 2);
@@ -445,9 +472,10 @@ int game_pause_page(int i2c_fd) {
   }
 }
 
-void more_page(int i2c_fd) {
+int more_page(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   update_full(i2c_fd, clear);
+  int flag = 0;
   static char info[37][22] = {"This game is that you",
                               " make the ball to be ",
                               "survived as long as p",
@@ -489,20 +517,52 @@ void more_page(int i2c_fd) {
   write_str(i2c_fd, "FLAPPY BALL", 35, 0);
 
   // print explanation
-  for (int i = 0; i < 5; i++) {
-    write_str(i2c_fd, info[i], 0, i + 2);
+  for (int i = flag; i < flag +5; i++) {
+    write_str(i2c_fd, info[i], i-flag, i + 2 - flag);
   }
 
   write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
   write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
-  write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
+  //write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
   while (1) {
     get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
     get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
-    get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
+    //get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
-    if (gpio_4_value == 0 || gpio_17_value == 0 || gpio_27_value == 0) {
-      home_page(i2c_fd);
+    if (gpio_4_value == 0){
+      return 4;
     }
+    else if(gpio_17_value == 0){
+      
+      update_full(i2c_fd, clear);
+      write_str(i2c_fd, "FLAPPY BALL", 35, 0);
+      if(flag == 35 || flag != 30){
+        if(flag == 35){
+          flag = 0;
+        }
+        else{
+          flag += 5;  
+        }
+        for (int i = flag; i < flag +5; i++) {
+          write_str(i2c_fd, info[i], i-flag, i + 2 - flag);
+        }  
+      }
+      else{
+        flag += 5;
+        for (int i = flag; i < flag +2; i++) {
+          write_str(i2c_fd, info[i], i-flag, i + 2 - flag);
+        }
+      }
+      
+
+      write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
+      write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
+      //write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
+      continue;
+      //return 17;
+    }
+    // else if(gpio_27_value == 0) {
+    //   return 27;
+    // }
   }
 }
