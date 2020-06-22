@@ -26,6 +26,8 @@ Library for game UI
 
 #define GEN_PERIOD 20
 
+enum { SW1 = 4, SW2 = 17, SW3 = 27 };
+
 int walls[WALL_NUMS][2];  // (x, h) of top wall
 int ball_x, ball_y;
 int ranks[RANK_NUM];
@@ -184,8 +186,6 @@ void print_home_page(int i2c_fd) {
 }
 
 void home_page(int i2c_fd) {
-  init_gpios();
-
   print_home_page(i2c_fd);
 
   while (1) {
@@ -225,17 +225,14 @@ void game_page(int i2c_fd) {
     } else if (gpio_17_value == 0) {
       ball_y += 3;
     } else if (gpio_27_value == 0) {
-      flag = game_pause_page(i2c_fd);
-      if (flag == 1) {  // resume;
+      ret = game_pause_page(i2c_fd);
+      if (ret == SW1) {  // resume
         update_full(i2c_fd, clear);
-        flag = -1;
         continue;
-      } else if (flag == 2) {  // restart
-        flag = -1;
+      } else if (ret == SW2) {  // restart
         init_game(i2c_fd);
         continue;
-      } else if (flag == 3) {
-        flag = -1;
+      } else if (ret == SW3) {  // home
         break;
       }
     }
@@ -245,15 +242,15 @@ void game_page(int i2c_fd) {
       game_over_page(i2c_fd);
       usleep(1000 * 1000);
       ret = game_result_page(i2c_fd);
-      if (ret == 4) {
+      if (ret == SW1) {  // restart
         init_game(i2c_fd);
         continue;
-      } else if (ret == 17) {
+      } else if (ret == SW2) {  // home
         break;
       }
-    } else {
-      score++;
     }
+
+    score++;
 
     // generate a new wall periodically
     counter++;
@@ -343,7 +340,6 @@ void game_over_page(int i2c_fd) {
   write_str(i2c_fd, "GAME OVER", 37, 2, 0);
   write_str(i2c_fd, "T  T", 52, 4, 0);
   write_str(i2c_fd, " __ ", 52, 5, 0);
-  return;
 }
 
 int game_result_page(int i2c_fd) {
@@ -375,9 +371,9 @@ int game_result_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
 
     if (gpio_4_value == 0) {  // restart
-      return 4;
+      return SW1;
     } else if (gpio_17_value == 0) {  // home
-      return 17;
+      return SW2;
     }
   }
 }
@@ -399,18 +395,16 @@ int game_pause_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {  // resume
-      return 1;
+      return SW1;
     } else if (gpio_17_value == 0) {  // restart
-      return 2;
+      return SW2;
     } else if (gpio_27_value == 0) {  /// home
-      return 3;
+      return SW3;
     }
   }
 }
 
-int more_page(int i2c_fd) {
-  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
-  update_full(i2c_fd, clear);
+void more_page(int i2c_fd) {
   int flag = 0;
   static char info[37][22] = {"This game is that you",
                               " make the ball to be ",
@@ -450,6 +444,9 @@ int more_page(int i2c_fd) {
                               " collides with obstab",
                               "les."};
 
+  uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
+  update_full(i2c_fd, clear);
+
   write_str(i2c_fd, "FLAPPY BALL", 35, 0, 0);
 
   // print explanation
@@ -464,7 +461,7 @@ int more_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {
-      return 4;
+      break;
     } else if (gpio_27_value == 0) {
       if (flag == 35 || flag != 30) {
         if (flag == 35) {

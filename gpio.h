@@ -1,3 +1,11 @@
+/*****************
+
+2016311477 Lee Bohee
+2016312506 Lee Seongtae
+
+Library for GPIO
+
+******************/
 int gpio_4_value;
 int gpio_17_value;
 int gpio_27_value;

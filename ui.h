@@ -28,4 +28,4 @@ void reset_page(int i2c_fd);
 void game_over_page(int i2c_fd);
 int game_result_page(int i2c_fd);
 int game_pause_page(int i2c_fd);
-int more_page(int i2c_fd);
+void more_page(int i2c_fd);

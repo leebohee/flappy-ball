@@ -1,3 +1,11 @@
+/*****************
+
+2016311477 Lee Bohee
+2016312506 Lee Seongtae
+
+Library for GPIO
+
+******************/
 #include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>

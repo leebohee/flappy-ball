@@ -8,13 +8,11 @@ Flappy Ball: A video console game
 ******************/
 #include <fcntl.h>
 #include <linux/i2c-dev.h>
-#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include "display.h"
+#include "gpio.h"
 #include "ui.h"
 
 #define SSD1306_I2C_DEV 0x3C
@@ -36,6 +34,7 @@ int main() {
   }
 
   ssd1306_init(i2c_fd);
+  init_gpios();
   for (int i = 0; i < RANK_NUM; i++) ranks[i] = -1;
   home_page(i2c_fd);
 
