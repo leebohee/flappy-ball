@@ -13,7 +13,6 @@ Flappy Ball: A video console game
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <time.h>
 #include <unistd.h>
 #include "display.h"
 #include "ui.h"
@@ -37,11 +36,6 @@ int main() {
   }
 
   ssd1306_init(i2c_fd);
-  for (int i = 0; i < WALL_NUMS; i++) {
-    walls[i][0] = -1;
-  }
-  srand((unsigned int)time(NULL));
-
   home_page(i2c_fd);
 
   close(i2c_fd);

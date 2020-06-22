@@ -23,6 +23,6 @@ void game_page(int i2c_fd);
 void rank_page(int i2c_fd);
 void reset_page(int i2c_fd);
 void game_over_page(int i2c_fd);
-void game_result_page(int i2c_fd);
+int game_result_page(int i2c_fd);
 void game_pause_page(int i2c_fd);
 void more_page(int i2c_fd);
