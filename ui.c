@@ -290,7 +290,7 @@ void game_page(int i2c_fd){
     if (check_collision(i2c_fd, ball_x, ball_y)) {
       game_over_page(i2c_fd);
       usleep( 1000 * 2000 );
-      rank_page(i2c_fd);
+      game_result_page(i2c_fd);
       //break;
     }
 
@@ -333,7 +333,18 @@ void rank_page(int i2c_fd) {
   write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
   write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
   write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
-  while(1);
+  while(1){
+    get_gpio_input_value(gpio_ctr,4,&gpio_4_value);
+    get_gpio_input_value(gpio_ctr,17,&gpio_17_value);
+    get_gpio_input_value(gpio_ctr,27,&gpio_27_value);
+    
+    if(gpio_4_value == 0){
+      reset_page(i2c_fd);
+    }
+    else if(gpio_17_value == 0){
+      
+    }
+  }
 }
 
 void reset_page(int i2c_fd) {
@@ -355,6 +366,7 @@ void game_over_page(int i2c_fd) {
 
   write_str(i2c_fd, "T  T", 52, 4);
   write_str(i2c_fd, " __ ", 52, 5);
+  return;
 }
 
 void game_result_page(int i2c_fd) {
@@ -367,6 +379,20 @@ void game_result_page(int i2c_fd) {
 
   write_str(i2c_fd, "RESTART", 5, S_PAGES - 2);
   write_str(i2c_fd, "HOME", 54, S_PAGES - 2);
+  while(1){
+    get_gpio_input_value(gpio_ctr,4,&gpio_4_value);
+    get_gpio_input_value(gpio_ctr,17,&gpio_17_value);
+    //get_gpio_input_value(gpio_ctr,27,&gpio_27_value);
+    
+    if(gpio_4_value == 0){
+      //reset();
+      game_page(i2c_fd);
+    }
+    else if (gpio_17_value == 0){
+      home_page(i2c_fd);
+    }
+  }
+      
 }
 
 void game_pause_page(int i2c_fd) {
@@ -432,5 +458,13 @@ void more_page(int i2c_fd) {
   write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
   write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
   write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
-  while(1);
+  while(1){
+    get_gpio_input_value(gpio_ctr,4,&gpio_4_value);
+    get_gpio_input_value(gpio_ctr,17,&gpio_17_value);
+    get_gpio_input_value(gpio_ctr,27,&gpio_27_value);
+    
+    if(gpio_4_value == 0 || gpio_17_value == 0 || gpio_27_value == 0){
+      home_page(i2c_fd);
+    }
+  }
 }
