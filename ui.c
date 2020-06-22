@@ -18,6 +18,8 @@ Library for game UI
 #define WALL_WIDTH 12
 #define EMPTY_HEIGHT 2
 
+#define RANK_NUM 5
+
 #define BALL_WIDTH 7
 
 #define PAGE(Y_LOC) Y_LOC / 8
@@ -29,6 +31,7 @@ Library for game UI
 
 int walls[WALL_NUMS][2];  // (x, h) of top wall
 int ball_x, ball_y;
+int ranks[RANK_NUM];
 
 int gpio_4_value;
 int gpio_17_value;
@@ -289,6 +292,14 @@ void home_page(int i2c_fd) {
       write_str(i2c_fd, "RANK", 100, S_PAGES - 2);
     } else if (gpio_27_value == 0) {
       printf("27\n");
+      rank_page(i2c_fd);
+      update_full(i2c_fd, clear);
+      draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
+      write_str(i2c_fd, "FLAPPY BALL", 35, 2);
+
+      write_str(i2c_fd, "START", 5, S_PAGES - 2);
+      write_str(i2c_fd, "MORE", 54, S_PAGES - 2);
+      write_str(i2c_fd, "RANK", 100, S_PAGES - 2);
     }
   }
 }
@@ -376,23 +387,49 @@ void game_page(int i2c_fd) {
 void rank_page(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   update_full(i2c_fd, clear);
-  write_str(i2c_fd, "NO.", 5, 0);
-  write_str(i2c_fd, "NAME", 54, 0);
-  write_str(i2c_fd, "SCORE", 98, 0);
+  write_str(i2c_fd, "NO.", 24, 0);
+  write_str(i2c_fd, "SCORE", 80, 0);
 
-  // print rankers
+  for(int i=0; i<RANK_NUM; i++) ranks[i] = i*15;
+
+  // print ranks
+  uint8_t no[2], scores[10];
+  for(int i=0; i<RANK_NUM; i++){
+  	if(ranks[i] < 0) break;
+  	sprintf(no, "%d", i+1);
+  	sprintf(scores, "%d", ranks[i]);
+  	write_str(i2c_fd, no, 24, i+1);
+  	write_str(i2c_fd, scores, 80, i+1);
+  }
 
   write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
-  write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
-  write_str(i2c_fd, "NEXT", 100, S_PAGES - 1);
+  // write_str(i2c_fd, "PREV", 54, S_PAGES - 1);
+  write_str(i2c_fd, "RESET", 95, S_PAGES - 1);
   while (1) {
     get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
-    get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
+    // get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {
+      break;
+    } else if (gpio_27_value == 0) {
       reset_page(i2c_fd);
-    } else if (gpio_17_value == 0) {
+
+      update_full(i2c_fd, clear);
+      write_str(i2c_fd, "NO.", 24, 0);
+      write_str(i2c_fd, "SCORE", 80, 0);
+
+      // print ranks
+  	  for(int i=0; i<RANK_NUM; i++){
+  	  if(ranks[i] < 0) break;
+  	    sprintf(no, "%d", i+1);
+  	    sprintf(scores, "%d", ranks[i]);
+  	    write_str(i2c_fd, no, 24, i+1);
+  	    write_str(i2c_fd, scores, 80, i+1);
+      }
+
+      write_str(i2c_fd, "HOME", 5, S_PAGES - 1);
+      write_str(i2c_fd, "RESET", 95, S_PAGES - 1);
     }
   }
 }
@@ -404,7 +441,21 @@ void reset_page(int i2c_fd) {
   write_str(i2c_fd, "want to reset?", 24, 3);
 
   write_str(i2c_fd, "YES", 5, S_PAGES - 2);
-  write_str(i2c_fd, "NO", 54, S_PAGES - 2);
+  write_str(i2c_fd, "NO", 100, S_PAGES - 2);
+
+  while (1) {
+    get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
+    get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
+
+    if (gpio_4_value == 0) {
+      for(int i=0; i<RANK_NUM; i++){
+      	ranks[i] = -1;
+      }
+      break;
+    } else if (gpio_27_value == 0) {
+      break;
+    }
+  }
 }
 
 void game_over_page(int i2c_fd) {
