@@ -279,7 +279,7 @@ void game_page(int i2c_fd) {
   int counter = 0, ret;
   int flag = -1;
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
-
+  init_game(i2c_fd);
   while (1) {
     // clear display
     get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
@@ -301,7 +301,7 @@ void game_page(int i2c_fd) {
         continue;
       }
       else if(flag = 2){//restart
-
+        init_game(i2c_fd);
       }
       else if(flag = 3){
         break;
@@ -417,7 +417,7 @@ int game_result_page(int i2c_fd) {
   }
 }
 
-void game_pause_page(int i2c_fd) {
+int game_pause_page(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   update_full(i2c_fd, clear);
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
