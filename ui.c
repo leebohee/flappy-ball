@@ -296,12 +296,13 @@ void game_page(int i2c_fd) {
     } else if (gpio_27_value == 0) {
       printf("27\n");
 
-      flag = game_pause_page(i2c_fd) == 0
+      flag = game_pause_page(i2c_fd);
       if(flag = 1){//resume;
         continue;
       }
       else if(flag = 2){//restart
         init_game(i2c_fd);
+        continue;
       }
       else if(flag = 3){
         break;
@@ -372,7 +373,6 @@ void rank_page(int i2c_fd) {
     }
   }
 }
-  `
 void reset_page(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   update_full(i2c_fd, clear);
@@ -433,8 +433,6 @@ int game_pause_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr,27,&gpio_27_value);
     
     if(gpio_4_value == 0){//resume
-      //reset();
-      //game_page(i2c_fd);
       return 1;
     }
     else if (gpio_17_value == 0){//restart/
