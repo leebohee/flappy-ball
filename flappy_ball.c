@@ -36,6 +36,7 @@ int main() {
   }
 
   ssd1306_init(i2c_fd);
+  for (int i = 0; i < RANK_NUM; i++) ranks[i] = -1;
   home_page(i2c_fd);
 
   close(i2c_fd);

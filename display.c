@@ -116,15 +116,22 @@ void update_area(int i2c_fd, const uint8_t* data, int x, int y, int x_len,
 #define FONT_WIDTH 6
 #define FONT_HEIGHT 1
 
-void write_char(int i2c_fd, char c, int x, int y) {
+void write_char(int i2c_fd, char c, int x, int y, int flag) {
   if (c < ' ') c = ' ';
-  update_area(i2c_fd, font[c - ' '], x, y, FONT_WIDTH, FONT_HEIGHT);
+  if (flag) {
+    uint8_t modified[6];
+    for (int i = 0; i < 6; i++) {
+      modified[i] = font[c - ' '][i] | 1;
+    }
+    update_area(i2c_fd, modified, x, y, FONT_WIDTH, FONT_HEIGHT);
+  } else
+    update_area(i2c_fd, font[c - ' '], x, y, FONT_WIDTH, FONT_HEIGHT);
 }
 
-void write_str(int i2c_fd, char* str, int x, int y) {
+void write_str(int i2c_fd, char* str, int x, int y, int flag) {
   char c;
   while (c = *str++) {
-    write_char(i2c_fd, c, x, y);
+    write_char(i2c_fd, c, x, y, flag);
     x += FONT_WIDTH;
   }
 }

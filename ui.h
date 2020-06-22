@@ -10,7 +10,10 @@ Library for game UI
 #define WALL_WIDTH 12
 #define EMPTY_HEIGHT 2
 
+#define RANK_NUM 5
+
 int walls[WALL_NUMS][2];  // (x, h) of top wall
+int ranks[RANK_NUM];
 
 void draw_ball(int i2c_fd, int x, int y);
 void draw_floor(int i2c_fd);
