@@ -199,9 +199,9 @@ int check_collision(int i2c_fd, int x, int y) {
     if (in_range(x0, walls[i][0], walls[i][0] + WALL_WIDTH) ||
         in_range(x1, walls[i][0], walls[i][0] + WALL_WIDTH)) {
       // check top wall
-      if (y0 <= walls[i][1]) return 1;
+      if (y0 <= walls[i][1] * 8) return 1;
       // check bottom wall
-      if (y1 >= walls[i][1] + EMPTY_HEIGHT) return 1;
+      if (y1 >= (walls[i][1] + EMPTY_HEIGHT) * 8) return 1;
     }
   }
   return 0;
