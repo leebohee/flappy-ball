@@ -9,10 +9,10 @@ Library for game UI
 #include "ui.h"
 #include <fcntl.h>
 #include <stdlib.h>
-#include <sys/mman.h>
 #include <time.h>
 #include <unistd.h>
 #include "display.h"
+#include "gpio.h"
 
 #define WALL_NUMS 4
 #define WALL_WIDTH 12
@@ -24,89 +24,12 @@ Library for game UI
 
 #define PAGE(Y_LOC) Y_LOC / 8
 
-#define PERIPHERAL_BASE 0x3F000000UL
-#define GPIO_BASE (PERIPHERAL_BASE + 0x200000)
-
 #define GEN_PERIOD 20
 
 int walls[WALL_NUMS][2];  // (x, h) of top wall
 int ball_x, ball_y;
 int ranks[RANK_NUM];
-
-int gpio_4_value;
-int gpio_17_value;
-int gpio_27_value;
-
-void* gpio_ctr;
 int score;
-
-void set_gpio_output_value(void* gpio_ctr, int gpio_nr, int value) {
-  int reg_id = gpio_nr / 32;
-  int pos = gpio_nr % 32;
-
-  if (value) {
-#define GPIO_SET_OFFSET 0x1c
-    uint32_t* output_set =
-        (uint32_t*)(gpio_ctr + GPIO_SET_OFFSET + 0x4 * reg_id);
-    *output_set = 0x1 << pos;
-  } else {
-#define GPIO_CLR_OFFSET 0x28
-    uint32_t* output_clr =
-        (uint32_t*)(gpio_ctr + GPIO_CLR_OFFSET + 0x4 * reg_id);
-    *output_clr = 0x1 << pos;
-  }
-}
-
-void set_gpio_output(void* gpio_ctr, int gpio_nr) {
-  int reg_id = gpio_nr / 10;
-  int pos = gpio_nr % 10;
-  uint32_t* fsel_reg = (uint32_t*)(gpio_ctr + 0x4 * reg_id);
-  uint32_t fsel_val = *fsel_reg;
-  uint32_t mask = 0x7 << (pos * 3);
-  fsel_val = fsel_val & ~mask;
-  uint32_t gpio_output_select = 0x1 << (pos * 3);
-  fsel_val = fsel_val | gpio_output_select;
-  *fsel_reg = fsel_val;
-}
-
-void set_gpio_input(void* gpio_ctr, int gpio_nr) {
-  int reg_id = gpio_nr / 10;
-  int pos = gpio_nr % 10;
-  uint32_t* fsel_reg = (uint32_t*)(gpio_ctr + 0x4 * reg_id);
-  uint32_t fsel_val = *fsel_reg;
-  uint32_t mask = 0x7 << (pos * 3);
-  fsel_val = fsel_val & ~mask;
-  *fsel_reg = fsel_val;
-}
-
-void get_gpio_input_value(void* gpio_ctr, int gpio_nr, int* value) {
-  int reg_id = gpio_nr / 32;
-  int pos = gpio_nr % 32;
-
-#define GPIO_LEV_OFFSET 0x34
-  uint32_t* level_reg = (uint32_t*)(gpio_ctr + GPIO_LEV_OFFSET + 0x4 * reg_id);
-  uint32_t level = *level_reg & (0x1 << pos);
-  *value = level ? 1 : 0;
-}
-
-void set_gpio_pullup(void* gpio_ctr, int gpio_nr) {
-  int reg_id = gpio_nr / 32;
-  int pos = gpio_nr % 32;
-
-#define GPIO_PUD_OFFSET 0x94
-#define GPIO_PUDCLK_OFFSET 0x98
-  uint32_t* pud_reg = (uint32_t*)(gpio_ctr + GPIO_PUD_OFFSET);
-  uint32_t* pudclk_reg =
-      (uint32_t*)(gpio_ctr + GPIO_PUDCLK_OFFSET + 0x4 * reg_id);
-
-#define GPIO_PUD_PULLUP 0x2
-  *pud_reg = GPIO_PUD_PULLUP;
-  usleep(1);
-  *pudclk_reg = (0x1 << pos);
-  usleep(1);
-  *pud_reg = 0;
-  *pudclk_reg = 0;
-}
 
 // Draw a ball whose center is (x, y), note that y is row, not page.
 void draw_ball(int i2c_fd, int x, int y) {
@@ -235,26 +158,6 @@ int check_collision(int i2c_fd, int x, int y) {
     }
   }
   return 0;
-}
-void init_gpios() {
-  int fdmem = open("/dev/mem", O_RDWR);
-  if (fdmem < 0) {
-    printf("Error opening /dev/mem");
-    return;
-  }
-  gpio_ctr =
-      mmap(0, 4096, PROT_READ + PROT_WRITE, MAP_SHARED, fdmem, GPIO_BASE);
-  if (gpio_ctr == MAP_FAILED) {
-    printf("mmap error ");
-    return;
-  }
-  set_gpio_input(gpio_ctr, 4);
-  set_gpio_input(gpio_ctr, 17);
-  set_gpio_input(gpio_ctr, 27);
-
-  set_gpio_pullup(gpio_ctr, 4);
-  set_gpio_pullup(gpio_ctr, 17);
-  set_gpio_pullup(gpio_ctr, 27);
 }
 
 void init_game(int i2c_fd) {
