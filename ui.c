@@ -114,7 +114,12 @@ void draw_ball(int i2c_fd, int x, int y) {
   static const unsigned char ball[] = {
       0x1C, 0x22, 0x41, 0x41, 0x41, 0x22, 0x1C,
   };
-
+  uint8_t* init_buf1 = (uint8_t*)malloc(BALL_WIDTH);
+  uint8_t* init_buf2 = (uint8_t*)malloc(BALL_WIDTH);
+  for (int i =0; i<BALL_WIDTH; i++){
+    init_buf1[i] = 0;
+    init_buf2[i] = 0;
+  }
   int x0 = x - (BALL_WIDTH / 2);
   int y0 = y - (BALL_WIDTH / 2);
   int x1 = x + (BALL_WIDTH / 2);
@@ -136,6 +141,9 @@ void draw_ball(int i2c_fd, int x, int y) {
     } else {
       update_area(i2c_fd, ball, x0, PAGE(y0), BALL_WIDTH, 1);
     }
+    update_area(i2c_fd, init_buf1, x0, PAGE(y0)-1, BALL_WIDTH, 1);
+    update_area(i2c_fd, init_buf1, x0, PAGE(y0)+1, BALL_WIDTH, 1);
+
   } else {
     uint8_t* part1_buf = (uint8_t*)malloc(BALL_WIDTH);
     uint8_t* part2_buf = (uint8_t*)malloc(BALL_WIDTH);
@@ -144,11 +152,15 @@ void draw_ball(int i2c_fd, int x, int y) {
       part1_buf[i] = ball[i] << offset;
       part2_buf[i] = ball[i] >> (8 - offset);
     }
+    update_area(i2c_fd, init_buf1, x0, PAGE(y0)-1, BALL_WIDTH, 1);
     update_area(i2c_fd, part1_buf, x0, PAGE(y0), BALL_WIDTH, 1);
     update_area(i2c_fd, part2_buf, x0, PAGE(y1), BALL_WIDTH, 1);
+    update_area(i2c_fd, init_buf1, x0, PAGE(y1)+1, BALL_WIDTH, 1);
     free(part1_buf);
     free(part2_buf);
   }
+  free(init_buf1);
+  free(init_buf2);
 }
 
 // Draw a floor of the map.
@@ -314,7 +326,7 @@ void game_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
     get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
-    update_full(i2c_fd, clear);
+    //update_full(i2c_fd, clear);
     if (gpio_4_value == 0) {
       printf("4\n");
       ball_y -= 3;
@@ -326,14 +338,18 @@ void game_page(int i2c_fd) {
       printf("27\n");
 
       flag = game_pause_page(i2c_fd);
-      if(flag = 1){//resume;
+      if(flag == 1){//resume;
+        flag = -1;
         continue;
       }
-      else if(flag = 2){//restart
+      else if(flag == 2){//restart
+        flag = -1;
         init_game(i2c_fd);
+
         continue;
       }
-      else if(flag = 3){
+      else if(flag == 3){
+        flag = -1;
         break;
       }
 
@@ -390,7 +406,7 @@ void rank_page(int i2c_fd) {
   write_str(i2c_fd, "NO.", 24, 0);
   write_str(i2c_fd, "SCORE", 80, 0);
 
-  for(int i=0; i<RANK_NUM; i++) ranks[i] = i*15;
+  // for(int i=0; i<RANK_NUM; i++) ranks[i] = i*15;
 
   // print ranks
   uint8_t no[2], scores[10];
@@ -475,10 +491,21 @@ int game_result_page(int i2c_fd) {
   draw_rectangle(i2c_fd, 0, 0, S_WIDTH, S_PAGES);
 
   char _score[15];
+  char _rank[9];
+  int i,j;
+  for(i=0; i< RANK_NUM; i++){
+    if (score>ranks[i]){
+      for(j = RANK_NUM-1; j> i; j--){
+        ranks[j] = ranks[j-1];
+      } 
+      ranks[i] = score;
+      break;
+    }
+  }
   sprintf(_score,"SCORE : %d", score);
-
+  sprintf(_rank, "RANK : %d", i+1);
   write_str(i2c_fd, _score, 20, 2);
-  write_str(i2c_fd, "RANK: ", 20, 4);
+  write_str(i2c_fd, _rank, 20, 4);
 
   write_str(i2c_fd, "RESTART", 5, S_PAGES - 2);
   write_str(i2c_fd, "HOME", 54, S_PAGES - 2);
