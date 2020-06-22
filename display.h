@@ -9,6 +9,7 @@ Library for SSD1306
 #include <stdint.h>
 #include <stdio.h>
 
+
 #define S_WIDTH 128
 #define S_HEIGHT 64
 #define S_PAGES (S_HEIGHT / 8)

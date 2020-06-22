@@ -277,6 +277,7 @@ void home_page(int i2c_fd) {
 
 void game_page(int i2c_fd) {
   int counter = 0, ret;
+  int flag = -1;
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
 
   while (1) {
@@ -294,12 +295,18 @@ void game_page(int i2c_fd) {
       ball_y += 3;
     } else if (gpio_27_value == 0) {
       printf("27\n");
-      while (1) {
-        usleep(1000 * 300);
-        if (gpio_27_value == 0) {
-          break;
-        }
+
+      flag = game_pause_page(i2c_fd) == 0
+      if(flag = 1){//resume;
+        continue;
       }
+      else if(flag = 2){//restart
+
+      }
+      else if(flag = 3){
+        break;
+      }
+
     }
 
     // check collision
@@ -365,7 +372,7 @@ void rank_page(int i2c_fd) {
     }
   }
 }
-
+  `
 void reset_page(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   update_full(i2c_fd, clear);
@@ -420,6 +427,24 @@ void game_pause_page(int i2c_fd) {
   write_str(i2c_fd, "RESUME", 5, S_PAGES - 2);
   write_str(i2c_fd, "RESTART", 50, S_PAGES - 2);
   write_str(i2c_fd, "HOME", 100, S_PAGES - 2);
+  while(1){
+    get_gpio_input_value(gpio_ctr,4,&gpio_4_value);
+    get_gpio_input_value(gpio_ctr,17,&gpio_17_value);
+    get_gpio_input_value(gpio_ctr,27,&gpio_27_value);
+    
+    if(gpio_4_value == 0){//resume
+      //reset();
+      //game_page(i2c_fd);
+      return 1;
+    }
+    else if (gpio_17_value == 0){//restart/
+      //home_page(i2c_fd);
+      return 2;
+    }
+    else if(gpio_27_value == 0){///go to home
+      return 3;
+    }
+  }
 }
 
 void more_page(int i2c_fd) {
