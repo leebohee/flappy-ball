@@ -206,13 +206,16 @@ void home_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {
+      usleep(1000*200);
       init_game(i2c_fd);
       game_page(i2c_fd);
       print_home_page(i2c_fd);
     } else if (gpio_17_value == 0) {
+      usleep(1000*200);
       more_page(i2c_fd);
       print_home_page(i2c_fd);
     } else if (gpio_27_value == 0) {
+      usleep(1000*200);
       rank_page(i2c_fd);
       print_home_page(i2c_fd);
     }
@@ -239,6 +242,7 @@ void game_page(int i2c_fd) {
       ball_y += 3;
       status = 17;
     } else if (gpio_27_value == 0) {
+      usleep(1000*200);
       ret = game_pause_page(i2c_fd);
       if (ret == SW1) {  // resume
         update_full(i2c_fd, clear);
@@ -318,8 +322,10 @@ void rank_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {
+      usleep(1000*200);
       break;
     } else if (gpio_27_value == 0) {
+      usleep(1000*200);
       reset_page(i2c_fd);
       print_rank_page(i2c_fd);
     }
@@ -340,9 +346,11 @@ void reset_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {
+      usleep(1000*200);
       for (int i = 0; i < RANK_NUM; i++) ranks[i] = -1;
       break;
     } else if (gpio_27_value == 0) {
+      usleep(1000*200);
       break;
     }
   }
@@ -386,8 +394,10 @@ int game_result_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
 
     if (gpio_4_value == 0) {  // restart
+      usleep(1000*200);
       return SW1;
     } else if (gpio_17_value == 0) {  // home
+      usleep(1000*200);
       return SW2;
     }
   }
@@ -410,10 +420,13 @@ int game_pause_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {  // resume
+      usleep(1000*200);
       return SW1;
     } else if (gpio_17_value == 0) {  // restart
+      usleep(1000*200);
       return SW2;
     } else if (gpio_27_value == 0) {  /// home
+      usleep(1000*200);
       return SW3;
     }
   }
@@ -476,8 +489,10 @@ void more_page(int i2c_fd) {
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
 
     if (gpio_4_value == 0) {
+      usleep(1000*200);
       break;
     } else if (gpio_27_value == 0) {
+      usleep(1000*200);
       if (flag == 35 || flag != 30) {
         if (flag == 35) {
           flag = 0;
