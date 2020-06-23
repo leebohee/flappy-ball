@@ -191,8 +191,27 @@ void draw_line(int i2c_fd, int x0, int y0, int x1, int y1, int offset) {
 // Draw a rectangle, whose left-upper point is at (x, y),
 // with given width and height.
 void draw_rectangle(int i2c_fd, int x, int y, int w, int h) {
-  draw_line(i2c_fd, x, y, x + w - 1, y, 0);                  // upper-side
-  draw_line(i2c_fd, x, y + h - 1, x + w - 1, y + h - 1, 7);  // lower-side
+  if (h == 1) {
+    uint8_t* buffer = (uint8_t*)malloc(w);
+    ssd1306_command(i2c_fd, 0x20);  // addressing mode
+    ssd1306_command(i2c_fd, 0x0);   // horizontal addressing mode
+
+    ssd1306_command(i2c_fd, 0x21);  // set column start/end address
+    ssd1306_command(i2c_fd, x);
+    ssd1306_command(i2c_fd, x + w - 1);
+
+    ssd1306_command(i2c_fd, 0x22);  // set page start/end address
+    ssd1306_command(i2c_fd, y);
+    ssd1306_command(i2c_fd, y);
+
+    for (int i = 0; i < w; i++) {
+      buffer[i] = (1 << 7) | 1;
+    }
+    ssd1306_data(i2c_fd, buffer, w);
+  } else {
+    draw_line(i2c_fd, x, y, x + w - 1, y, 0);                  // upper-side
+    draw_line(i2c_fd, x, y + h - 1, x + w - 1, y + h - 1, 7);  // lower-side
+  }
   draw_line(i2c_fd, x, y, x, y + h - 1, 7);                  // left-side
   draw_line(i2c_fd, x + w - 1, y, x + w - 1, y + h - 1, 7);  // right-side
 }
