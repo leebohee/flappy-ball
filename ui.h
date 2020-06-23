@@ -8,7 +8,7 @@ Library for game UI
 ******************/
 #define WALL_NUMS 4
 #define WALL_WIDTH 12
-#define EMPTY_HEIGHT 2
+#define EMPTY_HEIGHT 3
 
 #define RANK_NUM 5
 

@@ -16,7 +16,7 @@ Library for game UI
 
 #define WALL_NUMS 4
 #define WALL_WIDTH 12
-#define EMPTY_HEIGHT 2
+#define EMPTY_HEIGHT 3
 
 #define RANK_NUM 5
 
@@ -24,7 +24,7 @@ Library for game UI
 
 #define PAGE(Y_LOC) Y_LOC / 8
 
-#define GEN_PERIOD 20
+#define GEN_PERIOD 30
 
 enum { SW1 = 4, SW2 = 17, SW3 = 27 };
 
@@ -132,7 +132,7 @@ void generate_wall(int i2c_fd) {
   for (int i = 0; i < WALL_NUMS; i++) {
     if (walls[i][0] < 0) {
       walls[i][0] = S_WIDTH;
-      walls[i][1] = rand() % 4 + 1;
+      walls[i][1] = rand() % 3 + 1;
       break;
     }
   }
@@ -228,15 +228,19 @@ void game_page(int i2c_fd) {
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   init_game(i2c_fd);
   int status = 0;
+  int frame = 0;
   while (1) {
+    frame++;
     // clear display
     get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
     get_gpio_input_value(gpio_ctr, 17, &gpio_17_value);
     get_gpio_input_value(gpio_ctr, 27, &gpio_27_value);
-
+    
+    if(frame%3==0) ball_y += 2;
+    status = 17;
     // update ball status depending on switch input
     if (gpio_4_value == 0) {
-      ball_y -= 3;
+      ball_y -= 2;
       status = 4;
     } else if (gpio_17_value == 0) {
       ball_y += 3;
@@ -254,6 +258,7 @@ void game_page(int i2c_fd) {
         break;
       }
     }
+    
 
     // check collision
     if (check_collision(i2c_fd, ball_x, ball_y)) {
