@@ -34,7 +34,7 @@ int ranks[RANK_NUM];
 int score;
 
 // Draw a ball whose center is (x, y), note that y is row, not page.
-void draw_ball(int i2c_fd, int x, int y) {
+void draw_ball(int i2c_fd, int x, int y, int status) {
   static const unsigned char ball[] = {
       0x1C, 0x22, 0x41, 0x41, 0x41, 0x22, 0x1C,
   };
@@ -65,8 +65,14 @@ void draw_ball(int i2c_fd, int x, int y) {
     } else {
       update_area(i2c_fd, ball, x0, PAGE(y0), BALL_WIDTH, 1);
     }
-    update_area(i2c_fd, init_buf1, x0, PAGE(y0) - 1, BALL_WIDTH, 1);
-    update_area(i2c_fd, init_buf1, x0, PAGE(y0) + 1, BALL_WIDTH, 1);
+    if(status == 4){
+      update_area(i2c_fd, init_buf1, x0, PAGE(y0) + 1, BALL_WIDTH, 1);  
+    }
+    if(status == 17){
+      update_area(i2c_fd, init_buf1, x0, PAGE(y0) - 1, BALL_WIDTH, 1);  
+    }
+    
+    
 
   } else {
     uint8_t* part1_buf = (uint8_t*)malloc(BALL_WIDTH);
@@ -76,10 +82,16 @@ void draw_ball(int i2c_fd, int x, int y) {
       part1_buf[i] = ball[i] << offset;
       part2_buf[i] = ball[i] >> (8 - offset);
     }
-    update_area(i2c_fd, init_buf1, x0, PAGE(y0) - 1, BALL_WIDTH, 1);
+    if(status == 4){
+      update_area(i2c_fd, init_buf1, x0, PAGE(y1) + 1, BALL_WIDTH, 1);  
+    }
+    if(status == 17){
+      update_area(i2c_fd, init_buf1, x0, PAGE(y0) - 1, BALL_WIDTH, 1);  
+    }
+    
     update_area(i2c_fd, part1_buf, x0, PAGE(y0), BALL_WIDTH, 1);
     update_area(i2c_fd, part2_buf, x0, PAGE(y1), BALL_WIDTH, 1);
-    update_area(i2c_fd, init_buf1, x0, PAGE(y1) + 1, BALL_WIDTH, 1);
+    
     free(part1_buf);
     free(part2_buf);
   }
@@ -212,7 +224,7 @@ void game_page(int i2c_fd) {
   int flag = -1;
   uint8_t* clear = (uint8_t*)calloc(S_WIDTH * S_PAGES, sizeof(uint8_t));
   init_game(i2c_fd);
-
+  int status = 0;
   while (1) {
     // clear display
     get_gpio_input_value(gpio_ctr, 4, &gpio_4_value);
@@ -222,8 +234,10 @@ void game_page(int i2c_fd) {
     // update ball status depending on switch input
     if (gpio_4_value == 0) {
       ball_y -= 3;
+      status = 4;
     } else if (gpio_17_value == 0) {
       ball_y += 3;
+      status = 17;
     } else if (gpio_27_value == 0) {
       ret = game_pause_page(i2c_fd);
       if (ret == SW1) {  // resume
@@ -270,7 +284,8 @@ void game_page(int i2c_fd) {
     char _score[15];
     sprintf(_score, "SCORE : %d", score);
     write_str(i2c_fd, _score, 0, S_PAGES - 1, 1);
-    draw_ball(i2c_fd, ball_x, ball_y);
+    draw_ball(i2c_fd, ball_x, ball_y,status);
+    status = 0;
     draw_walls(i2c_fd);
   }
 }
