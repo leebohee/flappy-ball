@@ -508,6 +508,10 @@ void more_page(int i2c_fd) {
           write_str(i2c_fd, info[i], i - flag, i + 2 - flag, 0);
         }
       } else {
+        update_full(i2c_fd, clear);
+        write_str(i2c_fd, "HOME", 5, S_PAGES - 1, 0);
+        write_str(i2c_fd, "NEXT", 100, S_PAGES - 1, 0);
+        write_str(i2c_fd, "FLAPPY BALL", 35, 0, 0);
         flag += 5;
         for (int i = flag; i < flag + 2; i++) {
           write_str(i2c_fd, info[i], i - flag, i + 2 - flag, 0);
